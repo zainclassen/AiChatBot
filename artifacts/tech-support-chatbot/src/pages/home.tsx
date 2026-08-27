@@ -369,7 +369,7 @@ export default function Home() {
                 <span className="hidden rounded-full border border-[#d5e7e3] bg-[#edf7f3] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[.1em] text-[#438b7d] sm:inline-flex">Private thread</span>
               </div>
               <div className="mt-1 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[.11em] text-[#8b9da1]">
-                {healthLoading ? <><span className="h-1.5 w-1.5 rounded-full bg-[#e5a55e] pulse-dot" />Checking relay</> : online ? <><span className="h-1.5 w-1.5 rounded-full bg-[#4cac91]" />Relay online · Replies stream live</> : <><span className="h-1.5 w-1.5 rounded-full bg-[#d65c55]" />Relay needs attention</>}
+                {healthLoading ? <><span className="h-1.5 w-1.5 rounded-full bg-[#e5a55e] pulse-dot" />Checking relay</> : online ? <><span className="h-1.5 w-1.5 rounded-full bg-[#4cac91]" />Relay online · Local guide</> : <><span className="h-1.5 w-1.5 rounded-full bg-[#d65c55]" />Relay needs attention</>}
               </div>
             </div>
           </div>
