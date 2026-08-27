@@ -24,6 +24,64 @@ Do not claim to have taken actions on the user's device or account. Do not ask f
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+function fallbackSupportReply(userMessage: string) {
+  const issue = userMessage.toLowerCase();
+  const os = userMessage.match(/\b(?:Windows(?:\s+\d+)?|macOS(?:\s+\w+)?|iOS|iPadOS|Android|Linux)\b/i)?.[0];
+  const errorCode = userMessage.match(/\b(?:error|code|status)[\s:#-]*[A-Z]?\d{3,5}\b/i)?.[0];
+  const context = [os, errorCode].filter(Boolean).join(" and ");
+  const contextLine = context
+    ? `I’m keeping ${context} in view while you work through these checks.`
+    : "I’m keeping the details from your message in view while you work through these checks.";
+
+  if (/\b(wi-?fi|wireless|internet|network|dns|vpn|ethernet)\b/i.test(issue)) {
+    return `The live assistant connection is unavailable, but I can still give you a focused first pass for this network issue. ${contextLine}
+
+1. Check whether another device on the same network is also losing access. If it is, restart the router and wait two minutes before reconnecting.
+2. If only this device is affected, disconnect from the network, forget the saved network, then join it again. For a VPN or custom DNS setup, turn it off temporarily and test once more.
+3. Record whether the drop happens at a predictable interval and note any error code before the next reconnect.
+
+If the connection still drops after those checks, the next step is to open a tier-2 ticket with your device model, network type, timing, and the exact error wording. Full AI replies will return when the configured OpenAI account has available quota.`;
+  }
+
+  if (/\b(crash|crashing|freeze|frozen|install|update|app|software|shutdown)\b/i.test(issue)) {
+    return `The live assistant connection is unavailable, but I can still give you a focused first pass for this software issue. ${contextLine}
+
+1. Save any work if the app still responds, then close it completely and reopen it once.
+2. Check for a pending app or operating-system update, install it, and restart the device before testing again.
+3. If the problem continues, clear the app cache or repair the installation. Avoid deleting app data until important files are backed up.
+
+If it still fails, open a tier-2 ticket with the app version, device model, steps that trigger the failure, and the exact error wording. Full AI replies will return when the configured OpenAI account has available quota.`;
+  }
+
+  if (/\b(sign in|login|log in|password|mfa|two-factor|verification|account|locked)\b/i.test(issue)) {
+    return `The live assistant connection is unavailable, but I can still give you a focused first pass for this account issue. ${contextLine}
+
+1. Confirm that the username or email is correct, then retry in a private browser window or the latest version of the app.
+2. If verification is looping, check the device time and try the most recent code only. Do not share a password or recovery code.
+3. Use the official password-reset flow once, then wait for the reset email before requesting another one.
+
+If the account remains locked or verification still loops, open a tier-2 ticket with the account email, approximate time of failure, and any non-sensitive error text. Full AI replies will return when the configured OpenAI account has available quota.`;
+  }
+
+  if (/\b(monitor|display|screen|bluetooth|audio|headset|speaker|keyboard|mouse|usb)\b/i.test(issue)) {
+    return `The live assistant connection is unavailable, but I can still give you a focused first pass for this hardware or peripheral issue. ${contextLine}
+
+1. Disconnect the accessory, power it off if possible, then reconnect it directly without a hub or adapter.
+2. Check the device settings for the selected display, audio output, or Bluetooth pairing and remove any duplicate entry.
+3. Restart the device and test with a known-good cable, port, or accessory if one is available.
+
+If the device is still not detected, open a tier-2 ticket with the model, connection type, visible lights or sounds, and any error text. Full AI replies will return when the configured OpenAI account has available quota.`;
+  }
+
+  return `The live assistant connection is unavailable, but I can still help you start safely. ${contextLine}
+
+1. Write down the device model, operating system, application name, and the exact wording of the error.
+2. Reproduce the issue once after restarting the affected app or device, and note what happens immediately before it fails.
+3. Check for a pending update and test again without changing multiple settings at once.
+
+If the issue remains unclear or needs account or hardware intervention, open a tier-2 ticket with those details. Full AI replies will return when the configured OpenAI account has available quota.`;
+}
+
 router.post("/support/chat", async (req, res) => {
   const parsed = SendSupportChatBody.safeParse(req.body);
 
@@ -63,11 +121,11 @@ router.post("/support/chat", async (req, res) => {
   } catch (error) {
     req.log.error({ err: error }, "Support chat completion failed");
     if (!res.writableEnded) {
-      res.write(
-        `data: ${JSON.stringify({
-          error: "The support assistant is temporarily unavailable. Please try again.",
-        })}\n\n`,
-      );
+      const lastUserMessage = [...parsed.data.messages]
+        .reverse()
+        .find((message) => message.role === "user")?.content ?? "";
+      res.write(`data: ${JSON.stringify({ content: fallbackSupportReply(lastUserMessage) })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     }
   }
