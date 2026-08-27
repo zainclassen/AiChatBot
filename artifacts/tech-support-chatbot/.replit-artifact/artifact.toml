@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Tech Support Chatbot"
+description = "An empathetic technical support assistant that tailors troubleshooting guidance to each user’s device, operating system, application, and error details, with dynamic responses and escalation guidance."
+version = "1.0.0"
+id = "artifacts/tech-support-chatbot"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23842
+
+[services.development]
+run = "pnpm --filter @workspace/tech-support-chatbot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tech-support-chatbot", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tech-support-chatbot/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23842"
+BASE_PATH = "/"
