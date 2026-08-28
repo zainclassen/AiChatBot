@@ -51,6 +51,9 @@ function localSupportReply(messages: SupportMessage[]) {
   const greeting = turn === 1
     ? `Hi — I’ve got your ${category === "unknown" ? "support issue" : `${category} issue`}${context ? ` (${context})` : ""}.`
     : "";
+  const firstResponseIntro = turn === 1
+    ? `${greeting}\n\nI can help you work through this and identify the fix. Start with these checks:`
+    : "";
   const followUpLead = turn > 1
     ? [
         "Let’s isolate the next useful signal.",
@@ -59,7 +62,7 @@ function localSupportReply(messages: SupportMessage[]) {
         "We can take a different route here instead of repeating the first check.",
       ][(turn - 2) % 4]
     : "";
-  const opening = [greeting, followUpLead].filter(Boolean).join(" ");
+  const opening = firstResponseIntro || followUpLead;
 
   if (category === "network") {
     if (turn > 1) {
